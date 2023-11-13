@@ -260,12 +260,12 @@ Now that we have all the necessary parts for the creation of a exploit we will d
 			E9 66 FF FF FF
 
 
-	8. Run [exploit4.py](./SourceCode/exploit4.py) with the breakpoint set at `jmp esp` as was described in step number `8` from the PreExploitation section. Follow it and make sure we jump to the start of the buffer. After hitting the breakpoint, and clicking advance once you should see the `jmp` instruction as shown below.
+	8. Run [exploit4.py](./SourceCode/exploit4.py) with the breakpoint set at `jmp esp` as was described in step number `8` from the PreExploitation section. Follow it and make sure we jump to the start of the buffer. That is after hitting the `jmp esp` breakpoint, and clicking step into button once you should see the `jmp` instruction as shown below.
 
 		<img src="Images/I26.png" width=600> 
 
 2. Now that we can jump to the start of the buffer, we can make the EggHunter Shellcode that will be executed.
-   * If you follow older walkthroughs, or use this on newer Windows systems you may face issues due to changes in instruction sets or systemcalls. 
+   * If you follow older walkthroughs, or use this on newer Windows systems you may face issues due to changes in  systemcall interface. 
      * In the case of the jump from Windows-7 to 10 the `INT 2E` instruction not being supported in Windows 10 is a reason it may fail [5] [6].
    * The ```msf-egghunt``` [generation method](https://armoredcode.com/blog/a-closer-look-to-msf-egghunter/) as described in some blog posts does not work for VChat when running on Windows 10, as we can see it contains the `INT 2E` interrupt 
 
@@ -287,7 +287,7 @@ Now that we have all the necessary parts for the creation of a exploit we will d
 
 		<img src="Images/I28.png" width=600> 
 
-3. We will also need a bind shell, this is a program that listens for connections on the target machine and provides a shell to someone that makes a tcp connection. We can generate the shell with the following command. 
+3. We will also need a bind shell, this is a program that listens for connections on the target machine and provides a shell to anyone that makes a tcp connection. We can generate the shell with the following command. 
 	```
 	$ msfvenom -p windows/shell_bind_tcp RPORT=4444 EXITFUNC=thread -f python -v SHELL -b '\x00'
 	```
@@ -336,7 +336,7 @@ Now that we have all the necessary parts for the creation of a exploit we will d
 5. Generate Shellcode Packet (Python), Due to the structure of the VChat server, our packet that contains the larger shellcode is a bit more complicated. 
       * In some walkthroughs they do not perform any overflow, this is because the original Vulnserver contains memory leaks where the received data is allocated on the heap, and is not de-allocated with a `free()` call.
       * In VChat, the heap allocations are de-allocated, therefore we need to perform an overflow in the **TRUN** buffer as that can hold the shellcode, and prevent the thread that is handling the **TRUN** message from exiting and de-allocating our shellcode.
-      * We will perform an overflow as is done in the [TURN](https://github.com/DaintyJet/VChat_TURN) exploitation, however we will add two `JMP` instructions and a [NOP Sled](https://unprotect.it/technique/nop-sled/), in this case it allows us to jump to an arbitrary location in the buffer, and fall down into the `JMP` instruction placed before the return address allowing us to create an infinite loop.
+      * We will perform an overflow as is done in the [TURN exploitation](https://github.com/DaintyJet/VChat_TURN), however we will add two `JMP` instructions and a [NOP Sled](https://unprotect.it/technique/nop-sled/), in this case the NOP Sled allows us to jump to an arbitrary location in the buffer, and fall down into the `JMP` instruction placed before the return address allowing us to easily create an infinite loop.
         * I simply picked an arbitrary location in the buffer to jump to and assembled the instruction as done in `step 1` of the exploitation procedure. 
 	```
 	PAYLOAD_SHELL = (
@@ -417,7 +417,7 @@ Now that we have all the necessary parts for the creation of a exploit we will d
 	<img src="Images/I31.png" width=600> 
 
    * If you do not see this, the exploit may have failed. Restart VChat and try again!
-   * This can be done against the VChat server attached to Immunity Debugger or against it as a standalone program. Due to resource limitations we tend to run it not attached to the Immunity Debugger. 
+   * This can be done against the VChat server attached to Immunity Debugger or against it as a standalone program. Due to resource limitations we tend to run it detached from the Immunity Debugger. 
 
 10. After a few minuets we can use ```nc <IP> <Port>``` to connect to the server and aquire a shell as shown below 
 
@@ -425,7 +425,7 @@ Now that we have all the necessary parts for the creation of a exploit we will d
 
 
 ## VChat Code
-Please refer to the [TRUN exploit](https://github.com/DaintyJet/VChat_TURN) for an explination as to how the staging of the Shellcode exploits Vulnserver's code. The following discussion on the ```DWORD WINAPI ConnectionHandler(LPVOID CSocket)``` function and ```TRUN``` case will be on how we bypassed the zeroing of ```TurnBuf``` and the freeing of ```RecvBuf``` and why it was done the way we did it. 
+Please refer to the [TRUN exploit](https://github.com/DaintyJet/VChat_TURN) for an explination as to how and why the TURN overflow exploits VChat's code. The following discussion on the ```DWORD WINAPI ConnectionHandler(LPVOID CSocket)``` function and the ```TRUN``` case will be on how we bypassed the zeroing of ```TurnBuf``` and the freeing of ```RecvBuf``` and why it was done the way we did it. 
 
 Most exploitations of the original [Vulnserver](https://github.com/stephenbradshaw/vulnserver) use the fact it contains memeory leaks to preform the EggHunter attack. That is, the ```RecvBuff``` is allocated on the heap in the following manner:
 
@@ -444,7 +444,7 @@ VChat contains the following code snipit at the end of the ```DWORD WINAPI Conne
 	free(GdogBuf);
 	```
 
-This means our shellcode is de-allocated when the function ends, and since this is a thread our shellcode gets overwritten or removed before we are able to find it with the EggHunter. In this case it was decided that we would exploit the **TRUN** command since it has a buffer large enough for the bind shellcode, and to prevent the memeory from being zeroed, or deallocated we would introduce a infinate loop into the buffer overflow. This prevents the program from freeing the allocated memeory without crashing the program. However this will make the program use up most if not all of your CPU! 
+This means our shellcode is de-allocated when the function ends, and since this is a thread our shellcode gets overwritten or removed before we are able to find it with the EggHunter. In this case it was decided that we would exploit the **TRUN** command since it has a buffer large enough for the bind shellcode, and to prevent the memeory from being zeroed, or deallocated we would introduce an infinate loop into the buffer overflow. This prevents the program from freeing the allocated memeory without crashing the program. However this will make the program use up most if not all of your CPU! 
 > It of course would be more efficent to simply execute the shellcode in the **TRUN** command but that defeats the purpose of this exercise!
 
 
@@ -462,7 +462,7 @@ The **GTER** case in the ```DWORD WINAPI ConnectionHandler(LPVOID CSocket)``` fu
 1. It declares the ```GterBuf``` buffer and allocates space for 180 bytes (characters)
 2. It zeros the ```GdogBuf``` which is not used in this function. 
 3. It copies over 180 characters from the ```RecvBuff``` into the ```GterBuf```
-4. It Zeros out the ```RecvBuff```, in the original Vulnserver this prevents us from using **GTER** to both stage the bind shell's shellcode and the EggHunter
+4. It Zeros out the ```RecvBuff```, in the original Vulnserver this prevents us from using **GTER** to both stage the bind shell's shellcode and inject the EggHunter
 5. It calls Function1 with the GterBuf
 
 The Overflow occurs in ```Function1(char*)```: 
