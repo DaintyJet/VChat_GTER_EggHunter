@@ -54,7 +54,7 @@ The following sections cover the process that should (Or may) be followed when p
    * This scan will also attempt to determine the version of the applications, this means when it encounters a non-standard application such as *VChat* it can take 30 seconds to 1.5 minuets depending on the speed of the systems involved to finish scanning. You may find the scan ```nmap <IP>``` without any flags to be quicker!
    * Example results are shown below:
 
-		![Alt text](Images/Nmap.png)
+		![NMap](Images/Nmap.png)
 
 3. **Linux**: As we can see the port ```9999``` is open, we can try accessing it using **Telnet** to send unencrypted communications
 	```
@@ -66,7 +66,8 @@ The following sections cover the process that should (Or may) be followed when p
    * Once you have connected, try running the ```HELP``` command, this will give us some information regarding the available commands the server processes and the arguments they take. This provides us a starting point for our [*fuzzing*](https://owasp.org/www-community/Fuzzing) work.
    * Exit with ```CTL+]```
    * An example is shown below
-		![Alt text](Images/Telnet.png)
+
+		![Telent](Images/Telnet.png)
 
 ### Dynamic Analysis 
 #### Launch VChat
