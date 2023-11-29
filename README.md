@@ -140,7 +140,7 @@ SPIKE is a C based fuzzing tool that is commonly used by professionals, it is av
 
 	<img src="Images/I4.png" width=600>
 
-	* Notice that the VChat appears to have crashed after our second message! We can see that the SPIKE script continues to run for ~190 more iterations before it fails to connect to the VChat's TCP socket, however this is long after the server started to fail connections.
+	* Notice that the VChat appears to have crashed after our second message! We can see that the SPIKE script continues to run for some more iterations before it fails to connect to the VChat's TCP socket, however this is long after the server started to fail connections.
 6. We can also look at the comparison of the Register values before and after the fuzzing in Immunity Debugger 
 	* Before 
 
@@ -451,14 +451,14 @@ This means our shellcode is de-allocated when the function ends, and since this 
 
 The **GTER** case in the ```DWORD WINAPI ConnectionHandler(LPVOID CSocket)``` function has the following structure:
 
-	```c
-	char* GterBuf = malloc(180);
-	memset(GdogBuf, 0, 1024);
-	strncpy(GterBuf, RecvBuf, 180);
-	memset(RecvBuf, 0, DEFAULT_BUFLEN);
-	Function1(GterBuf);
-	SendResult = send(Client, "GTER ON TRACK\n", 14, 0);
-	```			
+```c
+char* GterBuf = malloc(180);
+memset(GdogBuf, 0, 1024);
+strncpy(GterBuf, RecvBuf, 180);
+memset(RecvBuf, 0, DEFAULT_BUFLEN);
+Function1(GterBuf);
+SendResult = send(Client, "GTER ON TRACK\n", 14, 0);
+```			
 
 1. It declares the ```GterBuf``` buffer and allocates space for 180 bytes (characters)
 2. It zeros the ```GdogBuf``` which is not used in this function. 
@@ -521,12 +521,12 @@ EGGHUNTER += b"\xff\xe7"
 - Victim host: Windows Machine
 
 ## Test code
-1. [exploit0.py](SourceCode/exploit1.py) : Sends a reproduction of the fuzzed message that crashed the server.
-2. [exploit1.py](SourceCode/exploit1.py) : Sends a cyclic pattern of chars to identify the offset used to modify the memory at the address we need to inject to control EIP.
-3. [exploit2.py](SourceCode/exploit2.py) : Replacing the bytes at the offset discovered by exploit1.py with the address of a different value (`B`) so we can ensure the offset we discovered is correct.
-4. [exploit3.py](SourceCode/exploit3.py) : Replacing the bytes at the offset discovered by exploit1.py with the address of a `jmp esp` instruction. This is used to modify the control flow, and test that our address for `jmp esp` is correct.
-3. [exploit4.py](SourceCode/exploit4.py) : Adding a instruction allowing us to jump to the start of the buffer. 
-4. [exploit5.py](SourceCode/exploit5.py) : Adding egghunter shellcode to the payload and adding a seperate bind shell payload to the exploit.
+1. [exploit0.py](SourceCode/exploit1.py): Sends a reproduction of the fuzzed message that crashed the server.
+2. [exploit1.py](SourceCode/exploit1.py): Sends a cyclic pattern of chars to identify the offset used to modify the memory at the address we need to inject to control EIP.
+3. [exploit2.py](SourceCode/exploit2.py): Replacing the bytes at the offset discovered by exploit1.py with the address of a different value (`B`) so we can ensure the offset we discovered is correct.
+4. [exploit3.py](SourceCode/exploit3.py): Replacing the bytes at the offset discovered by exploit1.py with the address of a `jmp esp` instruction. This is used to modify the control flow, and test that our address for `jmp esp` is correct.
+3. [exploit4.py](SourceCode/exploit4.py): Adding a instruction allowing us to jump to the start of the buffer. 
+4. [exploit5.py](SourceCode/exploit5.py): Adding egghunter shellcode to the payload and adding a seperate bind shell payload to the exploit.
 
 ## References
 [1] https://www.hick.org/code/skape/papers/egghunt-shellcode.pdf
