@@ -67,11 +67,11 @@ The following sections cover the process that should (Or may) be followed when p
    * Exit with ```CTL+]```
    * An example is shown below
 
-		![Telent](Images/Telnet.png)
+		![Telnet](Images/Telnet.png)
 
 4. **Linux**: We can try a few inputs to the *GTER* command, and see if we can get any information. Simply type *GTER* followed by some additional input as shown below
 
-	![Telent](Images/Telnet2.png)
+	![Telnet](Images/Telnet2.png)
 
 	* Now, trying every possible combinations of strings would get quite tiresome, so we can use the technique of *fuzzing* to automate this process as discussed later in the exploitation section.
 ### Dynamic Analysis 
@@ -171,7 +171,7 @@ SPIKE is a C based fuzzing tool that is commonly used by professionals, it is av
 	/usr/share/metasploit-framework/tools/exploit/pattern_create.rb -l 400
 	```
 	* This will allow us to inject a new return address at that location.
-2. Run the [exploit1.py](./SourceCode/exploit1.py) to inject the cyclic pattern into the Vunlserver program's stack and observe the EIP register. 
+2. Run the [exploit1.py](./SourceCode/exploit1.py) to inject the cyclic pattern into the Vulnserver program's stack and observe the EIP register. 
 
 	<img src="Images/I9.png" width=600>
 
@@ -358,7 +358,7 @@ Now that we have all the necessary parts for the creation of a exploit we will d
     	b'\xe9\x30\xff\xff\xff'        # Jump into NOP sled
 	)
 	```
-      * `b'TRUN /.:/'`: We are targiting the **TRUN** buffer as this has the space we need for the shellcode
+      * `b'TRUN /.:/'`: We are targeting the **TRUN** buffer as this has the space we need for the shellcode
       * `SHELL`: The Shellcode is placed in the buffer, this can be done anywhere but placing it at the front allows us to avoid accidentally jumping into it.
       * `b'\x90' * (2003 - (len(SHELL) + 5))`: Create a NOP Sled, we do not want to overshoot the return address so we need to account for the length of the shellcode, and the 5 byte instruction for the `JMP` we will perform
       * `b'\xe9\x30\xff\xff\xff'`: This is one of the two `JMP` instructions, this is placed before the return address to prevents us from executing the address as an instruction which may lead to a crashed system state.
@@ -433,13 +433,13 @@ Now that we have all the necessary parts for the creation of a exploit we will d
 ## VChat Code
 Please refer to the [TRUN exploit](https://github.com/DaintyJet/VChat_TURN) for an explanation as to how and why the TURN overflow exploits VChat's code. The following discussion on the ```DWORD WINAPI ConnectionHandler(LPVOID CSocket)``` function and the ```TRUN``` case will be on how we bypassed the zeroing of ```TurnBuf``` and the freeing of ```RecvBuf``` and why it was done the way we did it. 
 
-Most exploitations of the original [Vulnserver](https://github.com/stephenbradshaw/vulnserver) use the fact it contains memeory leaks to preform the EggHunter attack. That is, the ```RecvBuff``` is allocated on the heap in the following manner:
+Most exploitations of the original [Vulnserver](https://github.com/stephenbradshaw/vulnserver) use the fact it contains memory leaks to preform the EggHunter attack. That is, the ```RecvBuff``` is allocated on the heap in the following manner:
 
 	```c
 	char *RecvBuf = malloc(DEFAULT_BUFLEN);
 	```
 
-There is no call to the function ```free()`` in the original [Vulnserver](https://github.com/stephenbradshaw/vulnserver), this causes a memeory leak where the malicous shellcode is injected into the heap, and even after the handiling thread exits it is still on the heap for the EggHunter to find. 
+There is no call to the function ```free()`` in the original [Vulnserver](https://github.com/stephenbradshaw/vulnserver), this causes a memory leak where the malicious shellcode is injected into the heap, and even after the handling thread exits it is still on the heap for the EggHunter to find. 
 
 
 VChat contains the following code snipit at the end of the ```DWORD WINAPI ConnectionHandler(LPVOID CSocket)``` function: 
@@ -450,8 +450,8 @@ VChat contains the following code snipit at the end of the ```DWORD WINAPI Conne
 	free(GdogBuf);
 	```
 
-This means our shellcode is de-allocated when the function ends, and since this is a thread our shellcode gets overwritten or removed before we are able to find it with the EggHunter. In this case it was decided that we would exploit the **TRUN** command since it has a buffer large enough for the bind shellcode, and to prevent the memeory from being zeroed, or deallocated we would introduce an infinate loop into the buffer overflow. This prevents the program from freeing the allocated memeory without crashing the program. However this will make the program use up most if not all of your CPU! 
-> It of course would be more efficent to simply execute the shellcode in the **TRUN** command but that defeats the purpose of this exercise!
+This means our shellcode is de-allocated when the function ends, and since this is a thread our shellcode gets overwritten or removed before we are able to find it with the EggHunter. In this case it was decided that we would exploit the **TRUN** command since it has a buffer large enough for the bind shellcode, and to prevent the memory from being zeroed, or deallocated we would introduce an infinite loop into the buffer overflow. This prevents the program from freeing the allocated memory without crashing the program. However this will make the program use up most if not all of your CPU! 
+> It of course would be more efficient to simply execute the shellcode in the **TRUN** command but that defeats the purpose of this exercise!
 
 
 The **GTER** case in the ```DWORD WINAPI ConnectionHandler(LPVOID CSocket)``` function has the following structure:
