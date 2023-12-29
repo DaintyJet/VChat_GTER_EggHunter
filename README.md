@@ -1,4 +1,4 @@
-# Vulnserver GTER Exploitation \<Hunting eggs\>
+# VChat GTER Exploitation Egg Hunting
 
 *Notice*: The following exploit, and its procedures are based on the original [Blog](https://fluidattacks.com/blog/vulnserver-gter/).
 ___
@@ -21,7 +21,7 @@ The following sections cover the process that should (Or may) be followed when p
 
 **Notice**: Please setup the Windows and Linux systems as described in [SystemSetup](../00-SystemSetup/README.md)!
 ### PreExploitation
-1. **Windows**: Setup Vchat
+1. **Windows**: Setup VChat
    1. Compile VChat and it's dependencies if they has not already been compiled. This is done with mingw 
       1. Create the essfunc object File 
 		```powershell
@@ -69,6 +69,11 @@ The following sections cover the process that should (Or may) be followed when p
 
 		![Telent](Images/Telnet.png)
 
+4. **Linux**: We can try a few inputs to the *GTER* command, and see if we can get any information. Simply type *GTER* followed by some additional input as shown below
+
+	![Telent](Images/Telnet2.png)
+
+	* Now, trying every possible combinations of strings would get quite tiresome, so we can use the technique of *fuzzing* to automate this process as discussed later in the exploitation section.
 ### Dynamic Analysis 
 #### Launch VChat
 1. Open Immunity Debugger
@@ -106,7 +111,7 @@ The following sections cover the process that should (Or may) be followed when p
 	<img src="Images/I3-4.png" width=800>
 
 #### Fuzzing
-SPIKE is a C based fuzzing tool that is commonly used by professionals, it is available in the [kali linux](https://www.kali.org/tools/spike/) and other [pen-testing platforms](https://www.blackarch.org/fuzzer.html) repositories. We should note that the original refernce page appears to have been taken over by a slot machine site at the time of this writing, so you should refer to the [original writeup](http://thegreycorner.com/2010/12/25/introduction-to-fuzzing-using-spike-to.html) of the SPIKE tool by vulnserver's author [Stephen Bradshaw](http://thegreycorner.com/) in addition to [other resources](https://samsclass.info/127/proj/p18-spike.htm) for guidance. The source code is still available on [GitHub](https://github.com/guilhermeferreira/spikepp/) and still maintained on [GitLab](https://gitlab.com/kalilinux/packages/spike).
+SPIKE is a C based fuzzing tool that is commonly used by professionals, it is available in the [kali linux](https://www.kali.org/tools/spike/) and other [pen-testing platforms](https://www.blackarch.org/fuzzer.html) repositories. We should note that the original reference page appears to have been taken over by a slot machine site at the time of this writing, so you should refer to the [original writeup](http://thegreycorner.com/2010/12/25/introduction-to-fuzzing-using-spike-to.html) of the SPIKE tool by vulnserver's author [Stephen Bradshaw](http://thegreycorner.com/) in addition to [other resources](https://samsclass.info/127/proj/p18-spike.htm) for guidance. The source code is still available on [GitHub](https://github.com/guilhermeferreira/spikepp/) and still maintained on [GitLab](https://gitlab.com/kalilinux/packages/spike).
 
 1. Open a terminal on the **Kali Linux Machine**
 2. Create a file ```GTER.spk``` file with your favorite text editor. We will be using a SPIKE script and interpreter rather than writing out own C based fuzzer. We will be using the [mousepad](https://github.com/codebrainz/mousepad) text editor.
@@ -217,7 +222,7 @@ SPIKE is a C based fuzzing tool that is commonly used by professionals, it is av
 
 		<img src="Images/I17.png" width=600>
 
-   3. Run the [exploit3.py](./SourceCode/exploit3.py) program till a overflow occurs (See EIP/ESP and stack changes)
+   3. Run the [exploit3.py](./SourceCode/exploit3.py) program till a overflow occurs (See EIP/ESP and stack changes), you should be able to tell by the black text at the bottom the the screen that says `Breakpoint at ...`.
 
 		<img src="Images/I18.png" width=600> 
 
@@ -353,7 +358,7 @@ Now that we have all the necessary parts for the creation of a exploit we will d
     	b'\xe9\x30\xff\xff\xff'        # Jump into NOP sled
 	)
 	```
-      * `b'TRUN /.:/'`: We are targiting the **TRUN** buffer as this has the space we need for the Shellcode
+      * `b'TRUN /.:/'`: We are targiting the **TRUN** buffer as this has the space we need for the shellcode
       * `SHELL`: The Shellcode is placed in the buffer, this can be done anywhere but placing it at the front allows us to avoid accidentally jumping into it.
       * `b'\x90' * (2003 - (len(SHELL) + 5))`: Create a NOP Sled, we do not want to overshoot the return address so we need to account for the length of the shellcode, and the 5 byte instruction for the `JMP` we will perform
       * `b'\xe9\x30\xff\xff\xff'`: This is one of the two `JMP` instructions, this is placed before the return address to prevents us from executing the address as an instruction which may lead to a crashed system state.
@@ -411,22 +416,22 @@ Now that we have all the necessary parts for the creation of a exploit we will d
 		fd.sendall(PAYLOAD)
 		print('Done!\nCheck the port 4444 of the victim.\nThis may take a few minuets!')
 	```
-      * First we send the bind shellcode packet, this is so the "egg" is staged in memeory for the EggHunter.
-      * Then we send the EggHunter, once this is sent it should start scanning memeory. Give this a few minuets and we should be able to connect to port 4444 on the target machine for a shell.  
-9. Run your exploit program, it should be eqiuvlent to [exploit5.py](./SourceCode/exploit5.py), and you should see the following output. 
+      * First we send the bind shellcode packet, this is so the "egg" is staged in memory for the EggHunter.
+      * Then we send the EggHunter, once this is sent it should start scanning memory. Give this a few minuets and we should be able to connect to port 4444 on the target machine for a shell.  
+9. Run your exploit program, it should be equivalent to [exploit5.py](./SourceCode/exploit5.py), and you should see the following output. 
 
 	<img src="Images/I31.png" width=600> 
 
    * If you do not see this, the exploit may have failed. Restart VChat and try again!
    * This can be done against the VChat server attached to Immunity Debugger or against it as a standalone program. Due to resource limitations we tend to run it detached from the Immunity Debugger. 
 
-10. After a few minuets we can use ```nc <IP> <Port>``` to connect to the server and aquire a shell as shown below 
+10. After a few minuets we can use ```nc <IP> <Port>``` to connect to the server and acquire a shell as shown below 
 
 	<img src="Images/I32.png" width=600> 
 
 
 ## VChat Code
-Please refer to the [TRUN exploit](https://github.com/DaintyJet/VChat_TURN) for an explination as to how and why the TURN overflow exploits VChat's code. The following discussion on the ```DWORD WINAPI ConnectionHandler(LPVOID CSocket)``` function and the ```TRUN``` case will be on how we bypassed the zeroing of ```TurnBuf``` and the freeing of ```RecvBuf``` and why it was done the way we did it. 
+Please refer to the [TRUN exploit](https://github.com/DaintyJet/VChat_TURN) for an explanation as to how and why the TURN overflow exploits VChat's code. The following discussion on the ```DWORD WINAPI ConnectionHandler(LPVOID CSocket)``` function and the ```TRUN``` case will be on how we bypassed the zeroing of ```TurnBuf``` and the freeing of ```RecvBuf``` and why it was done the way we did it. 
 
 Most exploitations of the original [Vulnserver](https://github.com/stephenbradshaw/vulnserver) use the fact it contains memeory leaks to preform the EggHunter attack. That is, the ```RecvBuff``` is allocated on the heap in the following manner:
 
