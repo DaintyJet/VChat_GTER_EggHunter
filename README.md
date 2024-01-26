@@ -1,4 +1,4 @@
-# VChat GTER Exploitation Egg Hunting
+# VChat GTER Exploit: Egg Hunting
 
 *Notice*: The following exploit, and its procedures are based on the original [Blog](https://fluidattacks.com/blog/vulnserver-gter/).
 ___
