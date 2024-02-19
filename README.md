@@ -17,10 +17,11 @@ The EggHunter works by searching the address space for a four byte tag *repeated
 EggHunters rely on system calls, or exception handing mechanisms that are specific to the target operating systems. For Linux they exploit a set of systemcalls or in a more obtrusive manner override the SIGSEGV exception handler [1]. In Windows they exploit a Windows specific feature Structured Exception Handling covered in a [later lab](http://www.github.com/daintyjet/VChat_SEH) or systemcalls as can be done in linux. This means each EggHunter is for use on a specific operating system, and at times a specific version of that operating system.
 
 
+**Notice**: Please setup the Windows and Linux systems as described in [SystemSetup](../SystemSetup/README.md)
 ## Exploit Process
 The following sections cover the process that should (Or may) be followed when preforming this exploitation on the VChat application. It should be noted, that the [**Dynamic Analysis**](#dynamic-analysis) section makes certain assumption primarily that we have access to the binary that may not be realistic however the enumeration and exploitation of generic Windows, and Linux servers in order to procure this falls out of the scope of this document. 
 
-**Notice**: Please setup the Windows and Linux systems as described in [SystemSetup](../SystemSetup/README.md)!
+**Notice**: Please setup the Windows and Linux systems as described in [SystemSetup](../00-SystemSetup/README.md)!
 ### PreExploitation
 1. **Windows**: Setup VChat
    1. Compile VChat and it's dependencies if they has not already been compiled. This is done with mingw 
