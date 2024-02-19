@@ -21,11 +21,11 @@ EggHunters rely on system calls, or exception handing mechanisms that are specif
 ## Exploit Process
 The following sections cover the process that should (Or may) be followed when preforming this exploitation on the VChat application. It should be noted, that the [**Dynamic Analysis**](#dynamic-analysis) section makes certain assumption primarily that we have access to the binary that may not be realistic however the enumeration and exploitation of generic Windows, and Linux servers in order to procure this falls out of the scope of this document. 
 
-**Notice**: Please setup the Windows and Linux systems as described in [SystemSetup](../00-SystemSetup/README.md)!
+
 ### PreExploitation
 1. **Windows**: Setup VChat
-   1. Compile VChat and it's dependencies if they has not already been compiled. This is done with mingw 
-      1. Create the essfunc object File 
+   1. Compile VChat and it's dependencies if they has not already been compiled. This is done with mingw. 
+      1. Create the essfunc object File. 
 		```powershell
 		# Compile Essfunc Object file 
 		$ gcc.exe -c essfunc.c
@@ -39,7 +39,7 @@ The following sections cover the process that should (Or may) be followed when p
          * ```-Wl,--out-implib=libessfunc.a```: We tell the linker to generate generate a import library "libessfunc".a" [2].
          * ```-Wl,--image-base=0x62500000```: We specify the [Base Address](https://learn.microsoft.com/en-us/cpp/build/reference/base-base-address?view=msvc-170) as ```0x62500000``` [3].
          * ```essfunc.o```: We build the DLL based off of the object file "essfunc.o"
-      3. Compile the VChat application 
+      3. Compile the VChat application. 
 		```powershell
 		# Compile and Link VChat
 		$ gcc.exe vchat.c -o vchat.exe -lws2_32 ./libessfunc.a
@@ -47,7 +47,7 @@ The following sections cover the process that should (Or may) be followed when p
          * ```vchat.c```: The source file is "vchat.c"
          * ```-o vchat.exe```: The output file will be the executable "vchat.exe"
          * ```-lws2_32 ./libessfunc.a```: Link the executable against the import library "libessfunc.a", enabling it to use the DLL "essfunc.dll"
-   2. Launch the VChat application 
+   2. Launch the VChat application. 
 		* Click on the Icon in File Explorer when it is in the same directory as the essfunc dll
 2. **Linux**: Run NMap
 	```sh
@@ -60,7 +60,7 @@ The following sections cover the process that should (Or may) be followed when p
 
 		![NMap](Images/Nmap.png)
 
-3. **Linux**: As we can see the port ```9999``` is open, we can try accessing it using **Telnet** to send unencrypted communications
+3. **Linux**: As we can see the port ```9999``` is open, we can try accessing it using **Telnet** to send unencrypted communications.
 	```
 	$ telnet <VChat-IP> <Port>
 
@@ -69,11 +69,11 @@ The following sections cover the process that should (Or may) be followed when p
 	```
    * Once you have connected, try running the ```HELP``` command, this will give us some information regarding the available commands the server processes and the arguments they take. This provides us a starting point for our [*fuzzing*](https://owasp.org/www-community/Fuzzing) work.
    * Exit with ```CTL+]```
-   * An example is shown below
+   * An example is shown below.
 
 		![Telnet](Images/Telnet.png)
 
-4. **Linux**: We can try a few inputs to the *GTER* command, and see if we can get any information. Simply type *GTER* followed by some additional input as shown below
+4. **Linux**: We can try a few inputs to the *GTER* command, and see if we can get any information. Simply type *GTER* followed by some additional input as shown below.
 
 	![Telnet](Images/Telnet2.png)
 
