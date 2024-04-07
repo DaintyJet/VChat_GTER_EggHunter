@@ -79,6 +79,7 @@ The following sections cover the process that should (Or may) be followed when p
 
 	* Now, trying every possible combinations of strings would get quite tiresome, so we can use the technique of *fuzzing* to automate this process as discussed later in the exploitation section.
 ### Dynamic Analysis 
+This phase of exploitation is where we launch the target application or binary and examine its behavior based on the input we provide. We can do this both using automated fuzzing tools and manually generated inputs.
 #### Launch VChat
 1. Open Immunity Debugger
 
@@ -115,7 +116,7 @@ The following sections cover the process that should (Or may) be followed when p
 	<img src="Images/I3-4.png" width=800>
 
 #### Fuzzing
-SPIKE is a C based fuzzing tool that is commonly used by professionals, it is available in [kali linux](https://www.kali.org/tools/spike/) and other [pen-testing platforms](https://www.blackarch.org/fuzzer.html) and repositories. We should note that the original reference page appears to have been taken over by a slot machine site at the time of this writing, so you should refer to the [original writeup](http://thegreycorner.com/2010/12/25/introduction-to-fuzzing-using-spike-to.html) of the SPIKE tool by vulnserver's author [Stephen Bradshaw](http://thegreycorner.com/) in addition to [other resources](https://samsclass.info/127/proj/p18-spike.htm) for guidance. The source code is still available on [GitHub](https://github.com/guilhermeferreira/spikepp/) and still maintained on [GitLab](https://gitlab.com/kalilinux/packages/spike).
+SPIKE is a C based fuzzing tool that is commonly used by professionals, it is available in [kali linux](https://www.kali.org/tools/spike/) and other [pen-testing platform's](https://www.blackarch.org/fuzzer.html) repositories. We should note that the original reference page appears to have been taken over by a slot machine site at the time of this writing, so you should refer to the [original writeup](http://thegreycorner.com/2010/12/25/introduction-to-fuzzing-using-spike-to.html) of the SPIKE tool by vulnserver's author [Stephen Bradshaw](http://thegreycorner.com/) in addition to [other resources](https://samsclass.info/127/proj/p18-spike.htm) for guidance. The source code is still available on [GitHub](https://github.com/guilhermeferreira/spikepp/) and is still maintained on [GitLab](https://gitlab.com/kalilinux/packages/spike).
 
 1. Open a terminal on the **Kali Linux Machine**.
 2. Create a file ```GTER.spk``` with your favorite text editor. We will be using a SPIKE script and interpreter rather than writing our own C based fuzzer. During this walkthrough we will be using the [mousepad](https://github.com/codebrainz/mousepad) text editor though any editor may be used.
@@ -149,7 +150,7 @@ SPIKE is a C based fuzzing tool that is commonly used by professionals, it is av
 
 	<img src="Images/I4.png" width=600>
 
-	* Notice that the VChat appears to have crashed after our second message! We can see that the SPIKE script continues to run for some more iterations before it fails to connect to the VChat's TCP socket, however this is long after the server started to fail connections.
+	* Notice that VChat appears to have crashed after our second message! We can see that the SPIKE script continues to run for some more iterations before it fails to connect to the VChat's TCP socket, however this is long after the server started to fail connections.
 6. We can also look at the comparison of the Register values before and after the fuzzing in Immunity Debugger to confirm a crash occurred. 
 	* Before 
 
@@ -170,7 +171,7 @@ SPIKE is a C based fuzzing tool that is commonly used by professionals, it is av
 
 
 #### Further Analysis
-1. Generate a Cyclic Pattern. We do this so we can tell *where exactly* the return address is located on the stack. We can use the *Metasploit* program [pattern_create.rb](https://github.com/rapid7/metasploit-framework/blob/master/tools/exploit/pattern_create.rb) to generate this string. By analyzing the values stored in the register which will be a subset of the generated string after a crash, we can tell where in memory the return address is stored.  
+1. Generate a Cyclic Pattern. We do this so we can tell *where exactly* the return address is located on the stack. We can use the *Metasploit* script [pattern_create.rb](https://github.com/rapid7/metasploit-framework/blob/master/tools/exploit/pattern_create.rb) to generate this string. By analyzing the values stored in the register which will be a subset of the generated string after a crash, we can tell where in memory the return address is stored.  
 	```sh
 	$ /usr/share/metasploit-framework/tools/exploit/pattern_create.rb -l 400
 	```
@@ -220,7 +221,7 @@ SPIKE is a C based fuzzing tool that is commonly used by professionals, it is av
       * We can see there are nine possible `jmp esp` instructions in the essfunc dll that we can use, any should work. We will use the last one `0x6250151e`.
 
 8. Modify your exploit program to reflect the [exploit3.py](./SourceCode/exploit3.py) script, we use this to verify that the `jmp esp` address we inject works.
-   1. Click on the black button highlighted below, enter in the address we decided in the previous step.
+   1. Click on the black button highlighted below, and enter in the address we decided in the previous step.
 
 		<img src="Images/I16.png" width=600>
 
@@ -228,13 +229,13 @@ SPIKE is a C based fuzzing tool that is commonly used by professionals, it is av
 
 		<img src="Images/I17.png" width=600>
 
-   3. Run the [exploit3.py](./SourceCode/exploit3.py) program till a overflow occurs (See EIP/ESP and stack changes), you should be able to tell by the black text at the bottom the the screen that says `Breakpoint at ...`.
+   3. Run the [exploit3.py](./SourceCode/exploit3.py) program till an overflow occurs (See EIP/ESP and stack changes), you should be able to tell by the black text at the bottom the the screen that says `Breakpoint at ...`.
 
 		<img src="Images/I18.png" width=600> 
 
          * Notice that the EIP now points to an essfunc.dll address!
 
-	4. Once the overflow occurs click the *step into* button highlighted below 
+	4. Once the overflow occurs click the *step into* button highlighted below. 
 
 		<img src="Images/I19.png" width=600>
 
@@ -288,7 +289,7 @@ Now that we have all the necessary parts for the creation of an exploit we will 
             *  `-e w00t`: Egg to search for.
    
    * We can use Immunity Debugger and ```mona.py``` to generate EggHunter shellcode that works.
-     1. Open immunity debugger and use the command `!mona egg -t w00t -wow64 -winver 10`.
+     1. Open Immunity Debugger and use the command `!mona egg -t w00t -wow64 -winver 10`.
         * `!mona`: Use the mona tool
         * `egg`: Use the EggHunter generation option
         * `-wow64`: Generate for a 64 bit machine
@@ -306,7 +307,7 @@ Now that we have all the necessary parts for the creation of an exploit we will 
       * `RPORT=4444`: Specify the Receiving (Remote) port is 4444. 
       * `EXITFUNC=thread`: Exit process, this is running as a thread.
       * `-f python`: Format the output for use in a python program.
-      * `-v SHELL`: Specify SHELL variable.
+      * `-v SHELL`: Specify SHELL as the variable name.
       * `-b '\x00'`: Set bad characters.
 
 4. Modify your exploit code to create a byte array representing the shellcode as shown in [exploit5.py](./SourceCode/exploit5.py), remember to prepend the *egg* repeated twice to the *bind* shellcode as this is what the EggHunter will use to identify the start of the shellcode and jump to it!
@@ -475,7 +476,7 @@ SendResult = send(Client, "GTER ON TRACK\n", 14, 0);
 1. It declares the ```GterBuf``` buffer and allocates space for 180 bytes (characters).
 2. It zeros the ```GdogBuf``` which is not used in this function. 
 3. It copies over 180 characters from the ```RecvBuff``` into the ```GterBuf```.
-4. It Zeros out the ```RecvBuff```, in the original Vulnserver this prevents us from using **GTER** to both stage the bind shell's shellcode and inject the EggHunter.
+4. It zeros out the ```RecvBuff```, in the original Vulnserver this prevents us from using **GTER** to both stage the bind shell's shellcode and inject the EggHunter.
 5. It calls Function1 with the GterBuf.
 
 The Overflow occurs in ```Function1(char*)```: 
