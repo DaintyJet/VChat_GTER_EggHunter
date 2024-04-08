@@ -1,30 +1,30 @@
 # VChat GTER Exploit: Egg Hunting
 
-*Notice*: The following exploit, and its procedures are based on the original [Blog](https://fluidattacks.com/blog/vulnserver-gter/).
+*Notice*: The following exploit and its procedures are based on the original [Blog](https://fluidattacks.com/blog/vulnserver-gter/).
 ___
 
-Not all buffer overflows are created equal. In this exploit we will be faced with an execution environment with very limited space once the overflow has occurred. To circumnavigate this we will use a technique known as [EggHunting](https://www.hick.org/code/skape/papers/egghunt-shellcode.pdf). A [common technique](https://www.rapid7.com/blog/post/2012/07/06/an-example-of-egghunting-to-exploit-cve-2012-0124/) where the attacker places a small piece of shellcode into the execution environment (the stack) which then proceeds to scan the virtual memory allocated to the process for a *tag*. This *tag* is used to identify where the rest of the malicious shellcode is located and to then jump to that location continuing execution but now of our larger malicious shellcode segment.  
+Not all buffer overflows are created equal. In this exploit, we will be faced with an execution environment with very limited space once the overflow has occurred. To circumnavigate this we will use a technique known as [EggHunting](https://www.hick.org/code/skape/papers/egghunt-shellcode.pdf). A [common technique](https://www.rapid7.com/blog/post/2012/07/06/an-example-of-egghunting-to-exploit-cve-2012-0124/) where the attacker places a small piece of shellcode into the execution environment (the stack) which then proceeds to scan the virtual memory allocated to the process for a *tag*. This *tag* is used to identify where the rest of the malicious shellcode is located and to then jump to that location continuing execution but now of our larger malicious shellcode segment.  
 
 We use this, as it allows us to circumnavigate space constraints on the stack by placing the small egghunting shellcode onto the stack; with the much larger exploit placed into another segment of memory in the program such as the [heap](https://learn.microsoft.com/en-us/cpp/mfc/memory-management-heap-allocation?view=msvc-170) where we have more space.
 
 ## EggHunting What is it
-EggHunters are delicate applications, they are designed to be small and *safely* search the *entire* virtual memory region allocated to a process [1]. There are a number of ways the EggHunter could crash the system, the first and foremost is an attempt to dereference an address that points to a unallocated region of memory so safety and reliability are a major concern. 
+EggHunters are delicate applications. They are designed to be small and *safely* search the *entire* virtual memory region allocated to a process [1]. There are a number of ways the EggHunter could crash the system. The first and foremost is an attempt to dereference an address that points to an unallocated region of memory, so safety and reliability are a major concern. 
 
-The EggHunter works by searching the address space for a four byte tag *repeated twice* (eight bytes total). This is done as the EggHunter itself must contain a copy of the tag, and could possibly find itself in it's search through the virtual memory [1]. To prevent this the EggHunter searches for two contiguous entries of the tag in memory as this guarantees we have found the shell code, and not the EggHunter. There is a small chance of a collision (false positive), but this is unlikely and is outweighed by the optimizations and space efficiency achieved by using the repeated 4-byte value [1]. 
+The EggHunter works by searching the address space for a four-byte tag *repeated twice* (eight bytes total). This is done as the EggHunter itself must contain a copy of the tag, and could possibly find itself in it's search through the virtual memory [1]. To prevent this, the EggHunter searches for two contiguous entries of the tag in memory, as this guarantees we have found the shell code and not the EggHunter. There is a small chance of a collision (false positive), but this is unlikely and is outweighed by the optimizations and space efficiency achieved by using the repeated 4-byte value [1]. 
 
 > An interesting thing to note as described in the original document [1] on EggHunters, is they described how the *tag* value may have to be valid assembler output. That is the tag should be valid and executable machine code as the Egg Hunting shell code may jump directly into the Tag address and start executing. If the tag was not valid machine code the program would then crash!
 
-EggHunters rely on system calls, or exception handing mechanisms that are specific to the target operating systems. For Linux they exploit a set of systemcalls or in a more obtrusive manner override the SIGSEGV exception handler [1]. In Windows they exploit a Windows specific feature Structured Exception Handling covered in a [later lab](http://www.github.com/daintyjet/VChat_SEH) or systemcalls as can be done in linux. This means each EggHunter is for use on a specific operating system, and at times a specific version of that operating system.
+EggHunters rely on system calls, or exception handing mechanisms that are specific to the target operating systems. For Linux they exploit a set of systemcalls or in a more obtrusive manner override the SIGSEGV exception handler [1]. In Windows they exploit a Windows specific feature Structured Exception Handling covered in a [later lab](http://www.github.com/daintyjet/VChat_SEH) or system calls as can be done in Linux. This means each EggHunter is for use on a specific operating system, and at times a specific version of that operating system.
 
 
 **Notice**: Please setup the Windows and Linux systems as described in [SystemSetup](../SystemSetup/README.md)
 ## Exploit Process
-The following sections cover the process that should (Or may) be followed when preforming this exploitation on the VChat application. It should be noted, that the [**Dynamic Analysis**](#dynamic-analysis) section makes certain assumption primarily that we have access to the binary that may not be realistic however the enumeration and exploitation of generic Windows, and Linux servers in order to procure this falls out of the scope of this document. 
+The following sections cover the process that should (Or may) be followed when preforming this exploitation on the VChat application. It should be noted, that the [**Dynamic Analysis**](#dynamic-analysis) section makes certain assumptions primarily that we have access to the binary that may not be realistic however the enumeration and exploitation of generic Windows, and Linux servers in order to procure this falls out of the scope of this document. 
 
 
 ### PreExploitation
 1. **Windows**: Setup VChat
-   1. Compile VChat and it's dependencies if they has not already been compiled. This is done with mingw. 
+   1. Compile VChat and its dependencies if they have not already been compiled. This is done with mingw. 
       1. Create the essfunc object File. 
 		```powershell
 		# Compile Essfunc Object file 
@@ -32,7 +32,7 @@ The following sections cover the process that should (Or may) be followed when p
 		```
       2. Create the [DLL](https://learn.microsoft.com/en-us/troubleshoot/windows-client/deployment/dynamic-link-library) containing functions that will be used by the VChat.   
 		```powershell
-		# Create a the DLL with a static (preferred) base address of 0x62500000
+		# Create a DLL with a static (preferred) base address of 0x62500000
 		$ gcc.exe -shared -o essfunc.dll -Wl,--out-implib=libessfunc.a -Wl,--image-base=0x62500000 essfunc.o
 		```
          * ```-shared -o essfunc.dll```: We create a DLL "essfunc.dll", these are equivalent to the [shared library](https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html) in Linux. 
@@ -54,7 +54,7 @@ The following sections cover the process that should (Or may) be followed when p
 	# Replace the <IP> with the IP of the machine.
 	$ nmap -A <IP>
 	```
-   * We can think of the "-A" flag like the term aggressive as it does more than the normal scans, and is often easily detected.
+   * We can think of the "-A" flag as the term aggressive as it does more than the normal scans and is often easily detected.
    * This scan will also attempt to determine the version of the applications, this means when it encounters a non-standard application such as *VChat* it can take 30 seconds to 1.5 minuets depending on the speed of the systems involved to finish scanning. You may find the scan ```nmap <IP>``` without any flags to be quicker!
    * Example results are shown below:
 
@@ -73,7 +73,7 @@ The following sections cover the process that should (Or may) be followed when p
 
 		![Telnet](Images/Telnet.png)
 
-4. **Linux**: We can try a few inputs to the *GTER* command, and see if we can get any information. Simply type *GTER* followed by some additional input as shown below.
+4. **Linux**: We can try a few inputs to the *GTER* command and see if we can get any information. Simply type *GTER* followed by some additional input as shown below.
 
 	![Telnet](Images/Telnet2.png)
 
@@ -85,11 +85,11 @@ This phase of exploitation is where we launch the target application or binary a
 
 	<img src="Images/I1.png" width=800> 
 
-    * Note that you may need to launch it as the *Administrator* this is done by right clicking the icon found in the windows search bar or on the desktop as shown below:
+    * Note that you may need to launch it as the *Administrator* this is done by right-clicking the icon found in the Windows search bar or on the desktop as shown below:
 			
 	<img src="Images/I1b.png" width = 200>
 
-2. Attach VChat: There are Two options! 
+2. Attach VChat: There are two options! 
    1. When the VChat is already Running 
         1. Click File -> Attach
 
@@ -108,10 +108,10 @@ This phase of exploitation is where we launch the target application or binary a
 
 			<img src="Images/I3-2.png" width=800>
 
-        3. Notice that a Terminal was opened when you clicked "Open" Now you should see the program output
+        3. Notice that a Terminal was opened when you clicked "Open" now you should see the program output
 
 			<img src="Images/I3-3.png" width=800>
-3. Ensure that the execution in not paused, click the red arrow (Top Left)
+3. Ensure that the execution is not paused, click the red arrow (Top Left)
 	
 	<img src="Images/I3-4.png" width=800>
 
@@ -195,14 +195,14 @@ SPIKE is a C based fuzzing tool that is commonly used by professionals, it is av
 		<img src="Images/I11.png" width=600> 
 
 		* See that the EIP is a series of the value `0x42` this is a series of Bs. This tells us that we can write an address to that location in order to change the control flow of the target program.
-		* *Note:* It took a few runs for this to work and update on Immunity debugger within the VirtualBox VM.
+		* *Note:* It took a few runs for this to work and update on Immunity Debugger within the VirtualBox VM.
 
 5. Use the [mona.py](https://github.com/corelan/mona) python program within Immunity Debugger to determine useful information about our target process. While the *cyclic pattern* from [exploit1.py](./SourceCode/exploit1.py) is in memory we can run the command ```!mona findmsp``` in the command line at the bottom of the Immunity Debugger GUI. **Note:** We must have sent the cyclic pattern and it must be present in the stack frame at the time we run this command!
 
 	<img src="Images/I12.png" width=600>
 
       * We can see that the offset (Discovered with [pattern_offset.rb](https://github.com/rapid7/metasploit-framework/blob/master/tools/exploit/pattern_offset.rb) earlier) is at the byte offset of `143`, the ESP has `23` bytes after jumping to the address in the ESP register, and the EBP is at the byte offset `139`.
-      * The most important thing we learn is that we have `24` bytes to work with! This is not much...  However we know there is `144` Bytes of **free space** from the **start** to the **end** of our **buffer**!
+      * The most important thing we learned is that we have `24` bytes to work with! This is not much...  However, we know there are `144` Bytes of **free space** from the **start** to the **end** of our **buffer**!
 6. Open the `Executable Modules` window from the **views** tab in Immunity Debugger. This allows us to see the memory offsets of each dependency VChat uses. This will help inform us as to which `jmp esp` instruction we should pick, since we want to avoid any *Windows dynamic libraries* since their base addresses may vary between executions and Windows systems. 
 
 	<img src="Images/I13.png" width=600>
@@ -225,7 +225,7 @@ SPIKE is a C based fuzzing tool that is commonly used by professionals, it is av
 
 		<img src="Images/I16.png" width=600>
 
-   2. Set a breakpoint at the desired address (Right click).
+   2. Set a breakpoint at the desired address (right-click).
 
 		<img src="Images/I17.png" width=600>
 
@@ -239,21 +239,21 @@ SPIKE is a C based fuzzing tool that is commonly used by professionals, it is av
 
 		<img src="Images/I19.png" width=600>
 
-	5. Notice that we jump to the stack we just overflowed!
+	5. Notice that we jumped to the stack we just overflowed!
 
 		<img src="Images/I20.png" width=600> 
 
 
 Now that we have all the necessary parts for the creation of an exploit we will discuss what we have done so far (the **exploit.py** files), and how we can now expand our efforts to gain a shell in the target machine. 
 ### Exploitation
-1. As we noted in the previous section there is **only** *24* bytes of free space after the `jmp esp` instruction is executed. We cannot create shellcode that allows remote execution in that limited amount of space. However we can place instructions in that small memory segment that will allow us to use the *144* bytes of space allocated to the buffer we overflowed to reach the return address. *Note*: Addresses and offsets may vary!
-   1. We can use the [jump instruction](https://c9x.me/x86/html/file_module_x86_id_147.html) and preform an unconditional jump to an offset relative to the current JUMP instruction's address. The use of a relative offset for the jump is important as we are working within the stack, where address may change between calls and executions. 
+1. As we noted in the previous section, there is **only** *24* bytes of free space after the `jmp esp` instruction is executed. We cannot create shellcode that allows remote execution in that limited amount of space. However, we can place instructions in that small memory segment that will allow us to use the *144* bytes of space allocated to the buffer we overflowed to reach the return address. *Note*: Addresses and offsets may vary!
+   1. We can use the [jump instruction](https://c9x.me/x86/html/file_module_x86_id_147.html) and perform an unconditional jump to an offset relative to the current JUMP instruction's address. The use of a relative offset for the jump is important as we are working within the stack, where address may change between calls and executions. 
    2. Perform the exploitation of VChat with [exploit3.py](./SourceCode/exploit3.py) as described in step `8` from the PreExploitation (previous) section.
    3. Scroll up to the start of the buffer we overflowed, we can find this by looking for where the `A`'s start as they have the relatively distinct value of 41 as shown before. In this case the address of our buffer start at `00EBF965` or `00FCF965`.
 
 		<img src="Images/I21.png" width=600> 
 
-   4. We now want to overwrite the start of the `B` buffer with a `jmp` instruction to continue execution by jumping to the start of our buffer. Right click the location and click assemble as shown below. 
+   4. We now want to overwrite the start of the `B` buffer with a `jmp` instruction to continue execution by jumping to the start of our buffer. Right-click the location and click assemble as shown below. 
 
 		<img src="Images/I22.png" width=600> 
 
@@ -269,9 +269,9 @@ Now that we have all the necessary parts for the creation of an exploit we will 
 
 		<img src="Images/I25.png" width=600> 
 
-         * You then need to convert the hex digits into what python expects. For example `E9 66 FF FF FF` becomes `\xe9\x66\xffxff\xff`.
+         * You then need to convert the hex digits into what python expects. For example, `E9 66 FF FF FF` becomes `\xe9\x66\xffxff\xff`.
 
-	8. Run the [exploit4.py](./SourceCode/exploit4.py) with the breakpoint set at `jmp esp` as was described in  step `8` from the PreExploitation (previous) section. Follow the flow of execution using the *step into* button and make sure we jump to the start of the buffer as expected. That is after hitting the `jmp esp` breakpoint, and clicking the *step into* button *once* you should see the short unconditional `jmp` instruction as shown below. Once you step into the new `jmp` instruction we should see the start of the buffer.
+	8. Run the [exploit4.py](./SourceCode/exploit4.py) with the breakpoint set at `jmp esp` as was described in  step `8` from the PreExploitation (previous) section. Follow the flow of execution using the *step into* button and make sure we jump to the start of the buffer as expected. That is, after hitting the `jmp esp` breakpoint, and clicking the *step into* button *once* you should see the short unconditional `jmp` instruction as shown below. Once you step into the new `jmp` instruction we should see the start of the buffer.
 
 		<img src="Images/I26.png" width=600> 
 
@@ -348,12 +348,12 @@ Now that we have all the necessary parts for the creation of an exploit we will 
       * In some walkthroughs they do not perform any overflow, this is because the original Vulnserver contains memory leaks where the received data is allocated on the heap, and **is not** de-allocated with a `free()` call.
       * In VChat, the heap allocations **are** de-allocated, therefore we need to perform an overflow in the **TRUN** buffer as that can hold the shellcode, and prevent the thread that is handling the **TRUN** message from exiting and de-allocating our shellcode.
       * We will perform an overflow as is done in the [TURN exploitation](https://github.com/DaintyJet/VChat_TURN), however we will add two `JMP` instructions and a [NOP Sled](https://unprotect.it/technique/nop-sled/), in this case the NOP Sled allows us to jump to an arbitrary location in the buffer, and fall down into the `JMP` instruction placed before the return address allowing us to easily create an infinite loop which prevents de-allocation.
-        * We can pick an arbitrary location in the buffer to jump to and assembled the instruction as done in `step 1` of the exploitation procedure. 
+        * We can pick an arbitrary location in the buffer to jump to and assemble the instruction as done in `step 1` of the exploitation procedure. 
 	```py
 	PAYLOAD_SHELL = (
     	b'TRUN /.:/' +                        # TRUN command of the server
     	SHELL +                               # Shell code
-    	b'\x90' * (2003 - (len(SHELL) + 5)) + # Padding! We have the shellcode, and 5 bytes of the jump we account for
+    	b'\x90' * (2003 - (len(SHELL) + 5)) + # Padding! We have the shellcode and 5 bytes of the jump we account for
     
     	# 62501205   FFE4             JMP ESP
     	# Return a bytes object.
@@ -366,7 +366,7 @@ Now that we have all the necessary parts for the creation of an exploit we will 
       * `b'TRUN /.:/'`: We are targeting the **TRUN** buffer as this has the space we need for the tcp-bind shellcode and the infinite-loop code.
       * `SHELL`: The Shellcode is placed in the buffer, this can be done anywhere but placing it at the front allows us to avoid accidentally jumping into it.
       * `b'\x90' * (2003 - (len(SHELL) + 5))`: Create a NOP Sled, we do not want to overshoot the return address so we need to account for the length of the shellcode, and the 5 byte instruction for the `JMP` we will perform.
-      * `b'\xe9\x30\xff\xff\xff'`: This is one of the two `JMP` instructions, this is placed before the return address to prevents us from executing the address as an instruction which may lead to a crashed system state.
+      * `b'\xe9\x30\xff\xff\xff'`: This is one of the two `JMP` instructions, this is placed before the return address to prevent us from executing the address as an instruction which may lead to a crashed system state.
       * `struct.pack('<L', 0x6250151e)`: A `JMP ESP` address, this is one of the ones we had discovered with the mona.py command `!mona jmp -r esp -cp nonull -o` in Immunity Debugger.
       * `b'\xe9\x30\xff\xff\xff'`: This is one of the two `JMP` instructions, this is placed after the return address so once we take control of the thread when the `JMP ESP` instruction is executed we enter an infinite loop, which prevents us from exiting the function and de-allocating the shellcode we injected for the EggHunter to find. 
 
@@ -429,9 +429,9 @@ Now that we have all the necessary parts for the creation of an exploit we will 
 	<img src="Images/I31.png" width=600> 
 
    * If you do not see this, the exploit may have failed. Restart VChat and try again!
-   * This can be done against the VChat server attached to Immunity Debugger or against it as a standalone program. Due to resource limitations we tended to run it detached from the Immunity Debugger. 
+   * This can be done against the VChat server attached to Immunity Debugger or against it as a standalone program. Due to resource limitations, we tended to run it detached from the Immunity Debugger. 
 
-10. After a few minuets we can use the command ```nc <IP> <Port>``` where the `<IP` is the Window machine's IP and `Port` is 4444 (Or whatever you generated the bind shellcode to have). This should connect to the server and acquire a shell as shown below. 
+10. After a few minutes, we can use the command ```nc <IP> <Port>``` where the `<IP` is the Window machine's IP and `Port` is 4444 (Or whatever you generated the bind shellcode to have). This should connect to the server and acquire a shell as shown below. 
 
 	<img src="Images/I32.png" width=600> 
 
@@ -440,7 +440,7 @@ Now that we have all the necessary parts for the creation of an exploit we will 
 ### TRUN
 Please refer to the [TRUN exploit](https://github.com/DaintyJet/VChat_TURN) for an explanation as to how and why the TURN overflow exploits VChat's code. The following discussion on the ```DWORD WINAPI ConnectionHandler(LPVOID CSocket)``` function and the ```TRUN``` case will be on how we bypassed the zeroing of ```TurnBuf``` and the freeing of ```RecvBuf``` in addition to why it was done the way we did it. 
 
-Most exploitations of the original [Vulnserver](https://github.com/stephenbradshaw/vulnserver) use the fact it contains memory leaks to preform the EggHunter attack. That is, the ```RecvBuff``` is allocated on the heap in the following manner:
+Most exploitations of the original [Vulnserver](https://github.com/stephenbradshaw/vulnserver) use the fact it contains memory leaks to perform the EggHunter attack. That is, the ```RecvBuff``` is allocated on the heap in the following manner:
 
 	```c
 	char *RecvBuf = malloc(DEFAULT_BUFLEN);
@@ -449,7 +449,7 @@ Most exploitations of the original [Vulnserver](https://github.com/stephenbradsh
 However there is no call to the function ```free()`` in the original [Vulnserver](https://github.com/stephenbradshaw/vulnserver) at any point against the *RecvBuf* allocated. This causes a memory leak where the malicious shellcode or data is injected into the heap, and even after the handling thread exits the Shellcode remains on the heap for the EggHunter to find. 
 
 
-In stark contrast to Vulnserver, VChat contains the following code snipit at the end of the ```DWORD WINAPI ConnectionHandler(LPVOID CSocket)``` function: 
+In stark contrast to Vulnserver, VChat contains the following code snippet at the end of the ```DWORD WINAPI ConnectionHandler(LPVOID CSocket)``` function: 
 
 	```c
 	closesocket(Client);
@@ -457,7 +457,7 @@ In stark contrast to Vulnserver, VChat contains the following code snipit at the
 	free(GdogBuf);
 	```
 
-This means our shellcode is de-allocated when the function ends, and since this is a thread our shellcode gets overwritten or removed before we are able to find it with the EggHunter. In this case it was decided that we would exploit the **TRUN** command since it has a buffer large enough for the bind shellcode, and to prevent the memory from being zeroed, or deallocated we would introduce an infinite loop into the buffer overflow. This prevents the program from freeing the allocated memory without crashing the program. However this will make the program use up most if not all of your CPU! 
+This means our shellcode is de-allocated when the function ends, and since this is a thread our shellcode gets overwritten or removed before we are able to find it with the EggHunter. In this case, it was decided that we would exploit the **TRUN** command since it has a buffer large enough for the bind shellcode, and to prevent the memory from being zeroed or deallocated, we would introduce an infinite loop into the buffer overflow. This prevents the program from freeing the allocated memory without crashing the program. However, this will make the program use up most, if not all, of your CPU! 
 > It of course would be more efficient to simply execute the shellcode in the **TRUN** command but that defeats the purpose of this exercise!
 
 #### GTER
@@ -490,7 +490,7 @@ void Function1(char *Input) {
 1. We declare a local buffer ```Buffer2S``` who's space for 140 characters is allocated on the *stack*.
 2. We copy ```Input```, which in this case can hold up to 180 characters into ```Buffer2S```.
 
-Our ability to modify the programs execution is because the C [standard library function](https://man7.org/linux/man-pages/man3/strcpy.3.html) ```strcpy(char* dst, char* src)``` is used to copy the passed parameter *Input* (i.e. KnocBuf) into a local buffer ```Buffer2S[140]```. Unlike the C [standard library function](https://cplusplus.com/reference/cstring/strncpy/) ```strncpy(char*,char*,size_t)``` used in the ```ConnectionHandler(LPVOID CSocket)``` which copies only a specified number of characters to the destination buffer. The ```strcpy(char* dst, char* src)``` function does not preform any **bound checks** when copying data from the **source** to **destination** buffer, it will stop copying once every byte up to and including a **null terminator** (`\0`) from the **source** buffer has been copied contiguously to the **destination** buffer. This allows overflows to occur since we can as is done in ```Function1(char*)``` copy a larger string into an array that does not have the space for it. As ```Buffer2S``` is allocated on the stack, when we overflow it we are able to modify the contents of the stack which includes the return address for the function.
+Our ability to modify the program's execution is because the C [standard library function](https://man7.org/linux/man-pages/man3/strcpy.3.html) ```strcpy(char* dst, char* src)``` is used to copy the passed parameter *Input* (i.e. KnocBuf) into a local buffer ```Buffer2S[140]```. Unlike the C [standard library function](https://cplusplus.com/reference/cstring/strncpy/) ```strncpy(char*,char*,size_t)``` used in the ```ConnectionHandler(LPVOID CSocket)``` which copies only a specified number of characters to the destination buffer. The ```strcpy(char* dst, char* src)``` function does not preform any **bound checks** when copying data from the **source** to **destination** buffer, it will stop copying once every byte up to and including a **null terminator** (`\0`) from the **source** buffer has been copied contiguously to the **destination** buffer. This allows overflows to occur since we can as is done in ```Function1(char*)``` copy a larger string into an array that does not have the space for it. As ```Buffer2S``` is allocated on the stack, when we overflow it, we are able to modify the contents of the stack, which includes the return address for the function.
 
 <!-- ##### End Planning
 However, the "egghunter code" provided in the tutorial cannot work in Windows 10.
@@ -517,7 +517,7 @@ In short, there are two things that are not mentioned in the original blog and y
 !mona egg -t w00t -wow64 win10
 ```
 
-The generated code is as followed
+The generated code is as follows:
 ```
 EGGHUNTER += b"\x33\xd2\x66\x81\xca\xff\x0f\x33\xdb\x42\x53\x53\x52\x53\x53\x53"
 EGGHUNTER += b"\x6a\x29\x58\xb3\xc0\x64\xff\x13\x83\xc4\x0c\x5a\x83\xc4\x08\x3c"
@@ -535,7 +535,7 @@ EGGHUNTER += b"\xff\xe7"
 3. [exploit2.py](SourceCode/exploit2.py): Replacing the bytes at the offset discovered by exploit1.py with the address of a different value (`B`) so we can ensure the offset we discovered is correct.
 4. [exploit3.py](SourceCode/exploit3.py): Replacing the bytes at the offset discovered by exploit1.py with the address of a `jmp esp` instruction. This is used to modify the control flow, and test that our address for `jmp esp` is correct.
 3. [exploit4.py](SourceCode/exploit4.py): Adding a instruction allowing us to jump to the start of the buffer. 
-4. [exploit5.py](SourceCode/exploit5.py): Adding egghunter shellcode to the payload and adding a seperate bind shell payload to the exploit.
+4. [exploit5.py](SourceCode/exploit5.py): Adding egghunter shellcode to the payload and adding a separate bind shell payload to the exploit.
 
 ## References
 [1] https://www.hick.org/code/skape/papers/egghunt-shellcode.pdf
