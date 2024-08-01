@@ -50,9 +50,6 @@ Then we can select the `GTER_Egg` module with the [`use`](https://www.offsec.com
 
 Once we have selected a module there are a [number of commands](https://www.offsec.com/metasploit-unleashed/using-exploits/) we can use, we will only be using a small subset of them. Namely we will be using `show` to show what we can configure, with `set` we will configure options used to control the exploit, and finally we will use `exploit` to launch the exploit.
 
-> [!IMPORTANT]
-> At the time of writing the egghunter used in the Metasploit module is hard-coded in. This means if you modify the TAG inserted at the start of the payload you will need to modify the egghunter manually in the source file.
-
 1. Show options
 
     <img src="Images/MSFOptions.png">
