@@ -4,9 +4,9 @@
 # This module requires Metasploit: https://metasploit.com/download
 # Current source: https://github.com/rapid7/metasploit-framework
 ##
-# File path: .msf4/modules/exploits/windows/vulnserver/knock.rb
+# File path: /usr/share/metasploit-framework/modules/exploit/windows/VChat/GTER_EGG.rb
 ##
-# This module exploits the TRUN command of vulnerable chat server
+# This module exploits the GTER command of vulnerable chat server.
 ##
 
 class MetasploitModule < Msf::Exploit::Remote	# This is a remote exploit module inheriting from the remote exploit class
