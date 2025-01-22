@@ -16,10 +16,10 @@ $ msfconsole -v
 > The Metasploit Framework in most cases will be installed by default on a Kali Linux or any other penetration testing platform you have chosen.
 
 
-Once you have the *Metasploit Framework* you can now **download or write** the Metasploit module. As this is an [Exploit Module](https://docs.metasploit.com/docs/modules.html#exploit-modules-2437) since it includes a *payload* and preform the exploitation of a target system/process we need to place the Ruby program into the `/usr/share/metasploit-framework/modules/exploit/`. Further since this is a Windows exploit we can place it in the `/usr/share/metasploit-framework/modules/exploit/windows` directory, within that I made a `vchat` directory to further organize the exploits.
+Once you have the *Metasploit Framework* you can now **download or write** the Metasploit module. This is going to be an [Exploit Module](https://docs.metasploit.com/docs/modules.html#exploit-modules-2437) since it includes a *payload* and preform the exploitation of a target system/process. This means we need to place the Ruby program into the `/usr/share/metasploit-framework/modules/exploit/`. Further since this is a Windows exploit we can place it in the `/usr/share/metasploit-framework/modules/exploit/windows` directory, within that I made a `vchat` directory to further organize the exploits.
 
 ```sh
-$ sudo mousepad /usr/share/metasploit-framework/modules/exploit/windows/vchat/TRUN.rb
+$ sudo mousepad /usr/share/metasploit-framework/modules/exploit/windows/vchat/GTER_Egg.rb
 ```
 
 > [!NOTE]
@@ -41,7 +41,7 @@ Once the modules are loaded we can then use the [`search`](https://www.offsec.co
 <img src="Images/MSFSearch.png">
 
 
-Then we can select the `TRUN` module with the [`use`](https://www.offsec.com/metasploit-unleashed/msfconsole-commands/#use) command followed by the index of the module we want to use. In my case this was `4`.
+Then we can select the `GTER_Egg` module with the [`use`](https://www.offsec.com/metasploit-unleashed/msfconsole-commands/#use) command followed by the index of the module we want to use. In my case this was `0`.
 
 <img src="Images/MSFUse.png">
 
@@ -54,7 +54,7 @@ Once we have selected a module there are a [number of commands](https://www.offs
 
     <img src="Images/MSFOptions.png">
 
-   * The *Module Options* are those specific to our module. The `RETOFFSET` is a custom option for telling the exploit th offset to the *return* value on the stack. The other options, `RHOSTS` and `RPORT` are use to control the remote connections our exploit will make and are from the ` Msf::Exploit::Remote` class we inherit.
+   * The *Module Options* are those specific to our module. The `RETOFFSET_TRUN` is a custom option for telling the exploit the offset to the *return* value on the stack for the TRUN command. The option `RETOFFSET_GTER` is used to set the offset of the *GTER* command. The other options, `RHOSTS` and `RPORT` are use to control the remote connections our exploit will make and are from the ` Msf::Exploit::Remote` class we inherit. Finally the `EGG_TAG` is used to control the *Tag* inserted at the front of the shellcode
    * The `Payload` options are used to control the behavior of the payload. With `EXITFUNC` telling the payload generator how the exploit will be ran (Thread vs Process), then `LHOST` and `LPORT` tell the payload how to connect back to up. The `LHOST` and `LPORT` are set automatically by Metasploit in most cases, if you have multiple interfaces it may not set the right one.
 
 2. Set Options, you use the keyword `set` followed by the option name and the value you want to configure it to be:
@@ -64,6 +64,8 @@ Once we have selected a module there are a [number of commands](https://www.offs
 3. Configure Payload, this also use the keyword `set` followed by the word `payload` and the one we would like to use in the exploit.
  
     <img src="Images/MSFPayload.png">
+
+   * You will need to change the payload to be a variant of the bind-shell for this to work as we do not account for the time it takes the egghunter to find the payload. If you use a reverse shell you should configure a netcat listener separately.
 
 > [!NOTE]
 > We can use the command `show payloads` to list all possible payloads that can be used with the exploit.
@@ -77,8 +79,9 @@ Once we have selected a module there are a [number of commands](https://www.offs
 
 Once configured we can use the keyword `exploit` to launch the attack.
 
-<img src="Images/MSFExploit.png">
 
+> [!IMPORTANT]
+> You will need to setup a netcat session with the target machine. Even though Metasploit tells you the exploit failed, you will just have to wait some time for the egg hunter to find the shellcode for the bind shell.
 
 ## Additional References
 [[1] Egghunter Mixin](https://www.offsec.com/metasploit-unleashed/egghunter-mixin/)
